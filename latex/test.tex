@@ -1,0 +1,173 @@
+\documentclass[a5paper, twoside]{book}
+
+
+%%
+% Book metadata
+\title{Nissepedia ett urval}
+\author{Nissepediaklubben}
+%\publisher{Videnskabens Forlag}
+
+
+%%
+% For nicely typeset tabular material
+\usepackage{booktabs}
+
+\usepackage[swedish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+
+% Inserts a blank page
+\newcommand{\blankpage}{\newpage\hbox{}\thispagestyle{empty}\newpage}
+
+\usepackage{units}
+
+% Typesets the font size, leading, and measure in the form of 10/12x26 pc.
+\newcommand{\measure}[3]{#1/#2$\times$\unit[#3]{pc}}
+
+\providecommand\phantomsection{}
+
+
+% Generates the index
+%\usepackage{makeidx}
+%\usepackage{multind}
+%\usepackage[columns=3,font=footnotesize]{idxlayout}
+
+\usepackage{imakeidx}
+%\indexsetup{level=\section*,toclevel=section,noclearpage}
+\makeindex[title=Det hele,columns=2]
+\makeindex[name=saker,title=Saker,columns=2]
+\makeindex[name=andrasaker,title=Andra Saker,columns=2]
+
+
+
+
+
+\begin{document}
+\small
+\pagenumbering{arabic}
+
+% Front matter
+\frontmatter
+
+% r.1 blank page
+\blankpage
+
+
+% r.3 full title page
+
+% v.4 copyright page
+\newpage
+
+~\vfill
+\thispagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\baselineskip}
+
+\par\textsc{Utegiven av Videnskabens Forlag}
+
+\par\textsc{www.nissepedia.org}
+
+\par Här kan man skriva in licens eller typ sånna saker
+
+\par\textit{Första utgåvan, Januari 2014}
+
+
+% r.7 dedication
+\cleardoublepage
+
+Här kan man ha en dedikation
+
+% r.9 introduction
+\cleardoublepage
+\chapter*{Introduktion}
+\index{Introduktion}
+
+Här kan man ha en introduktion
+\index[saker]{Här markerar jag en sak}
+
+
+\chapter*{Förord}
+\index{Förord}
+Här kommer det ett litet förord.
+
+
+%%
+% Start the main matter (normal chapters)
+\mainmatter
+
+\noindent
+\pagestyle{myheadings}
+\markboth{Nissepedia}{Ett urval}
+
+\chapter*{Ett urval}
+\newpage
+
+
+
+\small{
+\textbf{Vincent Bugliosi}
+\index[saker]{Vincent Bugliosi}
+\index[andrasaker]{Vincent Bugliosi}
+\index{Vincent Bugliosi}
+%kategorier: fantastiska levnadsöden
+\textit{Vincent Bugliosi}, född 18 augusti 1934 i Hibbing, Minnesota, är en jänkare som jobbade som åklagare i rättegången mot Charles Manson \textsl{(se Charles Manson s.~\pageref{charles_manson})}. 
+}
+
+\small{
+\textbf{Lundgren}
+\index[saker]{Lundgren}
+\index{Lundgren}
+Lundgren är en av de äldsta inventarierna i stadsbilden av centrala Norberg. Han har sedan inlandsisen smälte ansvarat för att kundvagnarna utanför Konsum och Ica kommer tillbaka på sin plats. Om arbetet utförs på konsultbasis eller ideellt är oklart. Det är också oklart om någon någonsin faktiskt bett honom att göra detta. Lundgren går alltid oklanderligt klädd i kavaj och kepsar med olika företagslogotyper \textsl{(se Kepsar med olika företagslogotyper s. 112)} och skulle med lätthet kunna ta plats i vilken historia som helst om Kapten Stofil. I väntan på att nya kundvagnar ska köras tillbaka händer det att han unnar sig ett pipstopp och går en sväng med händerna på ryggen.
+
+Enligt samstämmiga uppgifter från en källa var Lundgren mods på 1960-talet.
+%kategorier: fantastiska levnadsöden
+}
+
+
+\small{
+\textbf{Charles Manson}
+\index[saker]{Charles Manson}
+\index{Charles Manson}
+\label{charles_manson}
+\textit{Charles Manson}, född som Charles Milles Maddox den 12 november 1934 i Cincinnati, Ohio, är en amerikansk mångsysslare. På hans CV återfinns bland annat mördare, karaktär i South Park, musiker, låtskrivare och sektledare.
+}
+
+\small{
+\textbf{Sälar}
+\index[saker]{Sälar}
+\index{Sälar}
+\label{sälar}
+\textit{Sälar} (Pinnipedia)  finns i tre familjer; öronsälar, öronlösa sälar och valrossar. Valrossen är den häftigaste av dessa med sina balla sabeltänder. Sälen spenderar större delen av sin vakna tid med att ligga och jäsa eller ta det lugnt. Den lever främst på fisk men vissa arter har även utvecklat en febläss för krill.
+
+I modern tid är sälen kanske mest känd för att ha gett upphov till det smygborgerliga Miljöpartiet \textsl{(se Miljöpartiet s. 21)} som utnyttjade sälens efterblivna utseende till att fiska röster. Sälen är dock av naturen på intet sätt knuten till besvikna proggare. Punkbandet Atomångest \textsl{(se Atomångest s. 666)} tog exempelvis ställning i sälfrågan i sin låt \textbf{Blod} med textraden: "Vill du döda en säl? Nej, tack!".
+
+Att kalla någon för en säl betyder att man anser personen i fråga ha en aningen trind kroppshydda \textsl{(se Kroppshydda s. 1547)}.
+}
+
+
+
+% Back matter contains indices and stuff
+\backmatter
+
+\setlength{\parindent}{2em}
+\indexprologue{\small Här kan du hitta alla saker}
+\footnotesize{
+\printindex[saker]
+}
+
+\setlength{\parindent}{2em}
+\indexprologue{\small Här kan du hitta alla andra saker}
+\footnotesize{
+\printindex[andrasaker]
+}
+
+\setlength{\parindent}{2em}
+\indexprologue{\small Allt här}
+\footnotesize{
+\printindex
+}
+
+
+
+\end{document}
