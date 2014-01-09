@@ -1,8 +1,10 @@
 
 var request = require('request');
 var fs = require('fs');
+var md5 = require('MD5');
 
 var allPages = {}; // using id as key and title as value
+var allCategories = []; // category name
 
 // get the parsed data as html
 //http://en.wikipedia.org/w/api.php?action=parse&pageid=2012&format=json
@@ -107,7 +109,7 @@ var addLinkIfNotAdded = function(pageEntry, link)
 /**
 removes all the [[xxx]] from the body that is in the pageEntry.links
 */
-var cleanBodyOfLinks = function(pageEntry)
+var formatLinksInBody = function(pageEntry)
 {
 
 	// this regexp exposes the one or two groups
@@ -117,6 +119,16 @@ var cleanBodyOfLinks = function(pageEntry)
 
 	// if the display word exist expicitly then use that. otherwise just use the link word directly.
 	pageEntry.body = pageEntry.body.replace(linkRegexp, function(x,a,b){
+
+		var referenceId = getLabelReferenceFromTitle( b ? b : a);
+
+		if (b)
+		{
+			return a + " \\textsc{(se " + b + " s. ~\\pageref{"+referenceId+"})}"
+		}else
+		{
+			return a + " \\textsc{(se s. ~\\pageref{"+referenceId+"})}"
+		}
 		return b ? b : a;
 	});
 }
@@ -147,12 +159,17 @@ var addCategoryIfNotAdded = function(pageEntry, category)
 	{
 		pageEntry.categories.push(category);
 	}
+
+	if (allCategories.indexOf(category) === -1)
+	{
+		allCategories.push(category);
+	}
 }
 
 /**
 removes all the [[Kategori: xxx]] from the body that is in the pageEntry.categories
 */
-var cleanBodyOfCategories = function(pageEntry)
+var formatCategoriesInBody = function(pageEntry)
 {
 
 	for (var i = 0; i < pageEntry.categories.length; i++)
@@ -163,7 +180,7 @@ var cleanBodyOfCategories = function(pageEntry)
 }
 
 
-var cleanBodyOfFiles = function(pageEntry)
+var formatFilesInBody = function(pageEntry)
 {
 	var fileRegexp = new RegExp('\\[\\[Fil:\\s*([^\\]]*?)\\]\\]','gi');
 	pageEntry.body = pageEntry.body.replace(fileRegexp, '');
@@ -180,9 +197,80 @@ var trimBody = function(pageEntry)
 var cleanHtmlLinebreaks = function(pageEntry)
 {
 	//TODO: Do not remove bold and italic. just make it somehow different from the title
-	var linebreak = new RegExp('<\\s*\\\\?\\s*(br|b|i)\\s*\\\\?\\s*>','gi');
+	var linebreak = new RegExp('<\\s*\\\\?\\s*(br)\\s*\\\\?\\s*>','gi');
 	pageEntry.body = pageEntry.body.replace(linebreak, '');
 }
+
+var formatBoldInBody = function(pageEntry)
+{
+	// bold is '''something''' in wiki markup
+	var regexp = new RegExp("[']{3}([^'{3}]*?)[']{3}",'gi');
+
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		return "\\textbf{" + group0 + "}"
+	});
+
+	//also replace html tags
+	regexp = new RegExp("<\s*b\s*[^>]*>(.*?)<\s*/\s*b\s*>", 'gi');
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		return "\\textbf{" + group0 + "}"
+	});
+	
+}
+
+var formatItalicInBody = function(pageEntry)
+{
+	// bold is '''something''' in wiki markup
+	var regexp = new RegExp("[']{2}([^'{2}]*?)[']{2}",'gi');
+
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		return "\\textit{" + group0 + "}"
+	});
+
+	//also replace html tags
+	regexp = new RegExp("<\s*i\s*[^>]*>(.*?)<\s*/\s*i\s*>", 'gi');
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0 ) {
+		return "\\textit{" + group0 + "}"
+	});
+	
+}
+
+var formatDoubleQuotesInBody = function(pageEntry)
+{
+	// bold is '''something''' in wiki markup
+	var regexp = new RegExp('"([^"]*?)"','gi');
+
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		return "``" + group0 + "''"
+	});
+	
+}
+
+var cleanRedirects = function(pageEntry)
+{
+	pageEntry.body = pageEntry.body.replace(/#OMDIRIGERING/, '', 'g');
+}
+
+
+var getLabelReferenceFromTitle = function(title)
+{
+	title = title.toLowerCase();
+	title = cleanTitleFromQuotations(title);
+	title = md5(title);
+	return title;
+}
+
+var cleanTitleFromQuotations = function(title)
+{
+	if (title.charAt(0) === '"' && title.charAt(title.length-1) === '"')
+	{
+		return title.substring(1, title.length-1 );
+	}else
+	{
+		return title;
+	}
+}
+
 
 
 /**
@@ -191,27 +279,58 @@ Write the page to file
 var writePage = function(pageEntry)
 {
 
-	cleanBodyOfFiles(pageEntry);
+	formatFilesInBody(pageEntry);
+
+	formatBoldInBody(pageEntry);
+	formatItalicInBody(pageEntry);
+	formatDoubleQuotesInBody(pageEntry);
 
 	addCategories(pageEntry);
-	cleanBodyOfCategories(pageEntry);
+	formatCategoriesInBody(pageEntry);
 
 	addLinks(pageEntry);
-	cleanBodyOfLinks(pageEntry);
+	formatLinksInBody(pageEntry);
 
 	cleanHtmlLinebreaks(pageEntry);
+	cleanRedirects(pageEntry);
 
 	trimBody(pageEntry);
 
 	//TODO: Take care of the groups. Maybe as a see also?
 
-	var fixedBody = pageEntry.title + " - - - - - - - - - - - - - - - - - - - - \n"  + pageEntry.body + "\n" + "se även: " + pageEntry.links.join(", ") + "\n" + "kategorier: " + pageEntry.categories.join(", ") + "\n\n" ;
+	var output = "";
 
-	fs.writeFile('./out/'+pageEntry.pageid+'.txt', fixedBody, function (err) {
+	output += "\\small{\n";
+
+	// add title
+	output += "\\textbf{" + cleanTitleFromQuotations(pageEntry.title) + "}\n";
+
+	// add label anchor
+	output += "\\label{" + getLabelReferenceFromTitle(pageEntry.title) + "}\n";	
+
+	// add main index
+
+	//output += "\\index{" + pageEntry.title + "}\n"
+	
+	// add category indices
+	for (category in pageEntry.categories)
+	{
+		//output += "\\index[" + pageEntry.categories[category].replace(" ", "_", 'g') + "]{" + pageEntry.title + "}\n";
+	}
+
+	// add main body
+	output += pageEntry.body + "\n";
+
+
+	output += "}\n";
+	output += "\n";
+
+
+	fs.writeFile('./out/'+pageEntry.pageid+'.txt', output, function (err) {
 		if (err) throw err;
 		
 		console.log('SAVED-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-');
-		console.log(fixedBody);
+		console.log(output);
 		/*console.log(pageEntry.title + '(' + pageEntry.pageid + ')');
 		console.log(pageEntry.body);
 		console.log("se även: " + pageEntry.links.join(", "));
@@ -249,9 +368,11 @@ var curlPages = function(from, num, done)
 		{
 			if ('allpages' in responseObject['query-continue'])
 			{
-				if ('apfrom' in responseObject['query-continue']['allpages'])
+				if ('apcontinue' in responseObject['query-continue']['allpages'])
 				{
-					var nextEntryStart = responseObject['query-continue']['allpages']['apfrom'];
+					var nextEntryStart = responseObject['query-continue']['allpages']['apcontinue'];
+
+					// curl next block
 					curlPages(nextEntryStart, num, done);
 
 				}
@@ -269,6 +390,6 @@ var curlPages = function(from, num, done)
 	}).form({action: 'query', list: 'allpages', apfrom: from ,aplimit: num, format: 'json'});
 }
 
-curlPages('', 400, function(){
+curlPages('', 100, function(){
 	console.log("found all: " + Object.keys(allPages).length);
 });

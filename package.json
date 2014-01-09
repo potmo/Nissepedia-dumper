@@ -9,6 +9,7 @@
   "author": "Nisse Bergman",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "request": "~2.30.0"
+    "request": "~2.30.0",
+    "MD5": "~1.2.0"
   }
 }

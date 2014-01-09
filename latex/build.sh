@@ -1,6 +1,8 @@
 
 #!/bin/bash
 
-/usr/texbin/makeindex andrasaker.idx 
-/usr/texbin/makeindex saker.idx 
+
+#/usr/texbin/pdflatex -synctex=1 -interaction=nonstopmode test.tex 
+#/usr/texbin/splitindex test.idx
 /usr/texbin/pdflatex -synctex=1 -interaction=nonstopmode test.tex 
+
