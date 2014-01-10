@@ -118,18 +118,18 @@ var formatLinksInBody = function(pageEntry)
 	var linkRegexp = new RegExp('\\[\\[([^\\]\\|]*)\\|?([^\\]\\|]*?)\\]\\]','gi');
 
 	// if the display word exist expicitly then use that. otherwise just use the link word directly.
-	pageEntry.body = pageEntry.body.replace(linkRegexp, function(x,a,b){
+	pageEntry.body = pageEntry.body.replace(linkRegexp, function(x,pagetitle,displaytitle){
 
-		var referenceId = getLabelReferenceFromTitle( b ? b : a);
+		var referenceId = getLabelReferenceFromTitle( pagetitle );
 
-		if (b)
+		if (displaytitle)
 		{
-			return a + " \\textsc{(se " + b + " s. ~\\pageref{"+referenceId+"})}"
+			return displaytitle + " \\textsc{(se " + pagetitle + " s. ~\\pageref{"+referenceId+"})}"
 		}else
 		{
-			return a + " \\textsc{(se s. ~\\pageref{"+referenceId+"})}"
+			return pagetitle + " \\textsc{(se s. ~\\pageref{"+referenceId+"})}"
 		}
-		return b ? b : a;
+		
 	});
 }
 
