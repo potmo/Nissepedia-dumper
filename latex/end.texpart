@@ -1,0 +1,25 @@
+
+% Back matter contains indices and stuff
+\backmatter
+
+%\printindex[saker]
+%\printindex[andrasaker]
+%
+%\printindex[television]
+%\printindex[dialekter]
+%\printindex[musik]
+%\printindex[litteratur]
+%\printindex[djurriket]
+%\printindex[politik_och_debatt]
+%\printindex[dialekter]
+%\printindex[musik]
+%\printindex[litteratur]
+%\printindex[bubologi]
+%\printindex[overlevnadsknep]
+%\printindex[konst_och_kultur]
+%
+%\printindex
+
+
+
+\end{document}

@@ -121,13 +121,26 @@ var formatLinksInBody = function(pageEntry)
 	pageEntry.body = pageEntry.body.replace(linkRegexp, function(x,pagetitle,displaytitle){
 
 		var referenceId = getLabelReferenceFromTitle( pagetitle );
+		var currentPageReferenceId = getLabelReferenceFromTitle( pageEntry.title );
+
+		// no need to refer back to the same page 
+		if (referenceId === currentPageReferenceId)
+		{
+			if (displaytitle)
+			{			
+				return displaytitle;
+			}else
+			{
+				return pagetitle;
+			}
+		}
 
 		if (displaytitle)
 		{
-			return displaytitle + " \\textsc{(se " + pagetitle + " s. ~\\pageref{"+referenceId+"})}"
+			return displaytitle + " \\textsc{(se " + pagetitle + " s.~\\pageref{"+referenceId+"})}"
 		}else
 		{
-			return pagetitle + " \\textsc{(se s. ~\\pageref{"+referenceId+"})}"
+			return pagetitle + " \\textsc{(s.~\\pageref{"+referenceId+"})}"
 		}
 		
 	});
@@ -149,7 +162,7 @@ var addCategories = function(pageEntry)
 }
 
 /** 
-Add the category if it is not already added. Ignore case
+	Add the category if it is not already added. Ignore case
 **/
 var addCategoryIfNotAdded = function(pageEntry, category)
 {
@@ -167,7 +180,7 @@ var addCategoryIfNotAdded = function(pageEntry, category)
 }
 
 /**
-removes all the [[Kategori: xxx]] from the body that is in the pageEntry.categories
+	removes all the [[Kategori: xxx]] from the body that is in the pageEntry.categories
 */
 var formatCategoriesInBody = function(pageEntry)
 {
@@ -180,6 +193,9 @@ var formatCategoriesInBody = function(pageEntry)
 }
 
 
+/**
+	Removes all file references
+*/
 var formatFilesInBody = function(pageEntry)
 {
 	var fileRegexp = new RegExp('\\[\\[Fil:\\s*([^\\]]*?)\\]\\]','gi');
@@ -187,13 +203,16 @@ var formatFilesInBody = function(pageEntry)
 }
 
 /**
-removes all whitespace before and after the body text in pageEntry.body
+	removes all whitespace before and after the body text in pageEntry.body
 */
 var trimBody = function(pageEntry)
 {
 	pageEntry.body = pageEntry.body.trim();
 }
 
+/*
+	remove all <br> </br> <br/> and replace them with emptyness
+*/
 var cleanHtmlLinebreaks = function(pageEntry)
 {
 	//TODO: Do not remove bold and italic. just make it somehow different from the title
@@ -201,6 +220,10 @@ var cleanHtmlLinebreaks = function(pageEntry)
 	pageEntry.body = pageEntry.body.replace(linebreak, '');
 }
 
+/*
+	bold is '''something''' in wiki markup
+	but it is \textbf{something} in latex
+*/
 var formatBoldInBody = function(pageEntry)
 {
 	// bold is '''something''' in wiki markup
@@ -218,9 +241,13 @@ var formatBoldInBody = function(pageEntry)
 	
 }
 
+/*
+	italic is ''something'' in wiki markup
+	but it is \textit{something} in latex
+*/
 var formatItalicInBody = function(pageEntry)
 {
-	// bold is '''something''' in wiki markup
+	
 	var regexp = new RegExp("[']{2}([^'{2}]*?)[']{2}",'gi');
 
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
@@ -235,9 +262,15 @@ var formatItalicInBody = function(pageEntry)
 	
 }
 
+/*
+
+	quotes is "something" in wiki markup
+	but it is ``something'' in latex
+
+*/
 var formatDoubleQuotesInBody = function(pageEntry)
 {
-	// bold is '''something''' in wiki markup
+
 	var regexp = new RegExp('"([^"]*?)"','gi');
 
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
@@ -246,10 +279,112 @@ var formatDoubleQuotesInBody = function(pageEntry)
 	
 }
 
+var fromatUnorderedListsInBody = function(pageEntry)
+{
+
+	var lines = pageEntry.body.split('\n');
+
+	var output = "";
+
+	var currentDepth = 0;
+
+	for (lineIndex in lines)
+	{
+		var line = lines[lineIndex];
+		
+		var oldDepth = currentDepth;
+		//var currentDepth = new RegExp('^\\h?\\*{' +1+ '}[^\\*]+$', 'm');
+		var regexp = new RegExp('^\\s?(\\**?)([^\\*]+.*?)$', 'm');
+		var result = regexp.exec(line);
+
+		currentDepth = result ? result[1].length : 0;
+		line = result ? ' ' + result[2].trim() : line;
+
+		while (oldDepth < currentDepth)
+		{
+			output += '\\begin{itemize}\n';
+			oldDepth++;
+		}
+
+		if (currentDepth !== 0)	
+		{
+			output += '\\item' + line + '\n';
+		}
+
+		while (oldDepth > currentDepth)
+		{
+			output += '\\end{itemize}\n';
+			oldDepth--;
+		}	
+
+		if (currentDepth === 0)
+		{
+			output += line + '\n';
+		}
+	}
+
+	while (currentDepth > 0)
+	{
+		output += '\\end{itemize}\n';
+		currentDepth--;
+	}
+
+
+	pageEntry.body = output;
+	
+}
+
 var cleanRedirects = function(pageEntry)
 {
+	//TODO: Add a link instead fo just removing it
 	pageEntry.body = pageEntry.body.replace(/#OMDIRIGERING/, '', 'g');
 }
+
+/*
+	If the article starts with the title we can drop that so it doesn't repeat itself
+*/
+var removeInitialTitleFromBody = function(pageEntry)
+{
+
+	var lines = pageEntry.body.split('\n');
+	var first = lines[0];
+	
+	// match start of line
+	var cleanRegexp = new RegExp('^' + pageEntry.title + '', 'i');
+	first = first.replace(cleanRegexp, '');
+
+	var quoteRegexp = new RegExp('^``' + cleanTitleFromQuotations(pageEntry.title) + '\'\'', 'i');
+	first = first.replace(quoteRegexp, '');
+
+	var boldRegexp = new RegExp('^\\\\textbf{' + cleanTitleFromQuotations(pageEntry.title) + '}', 'i');
+	first = first.replace(boldRegexp, '');
+
+	
+	lines[0] = first;
+
+	pageEntry.body = lines.join('\n');
+}
+
+var addTitleToBody = function(pageEntry)
+{
+	// add title
+	pageEntry.body = "\\textbf{" + cleanTitleFromQuotations(pageEntry.title) + "}\n" + pageEntry.body;
+}
+
+var addLabelToBody = function(pageEntry)
+{
+	// add title
+	pageEntry.body = "\\label{" + getLabelReferenceFromTitle(pageEntry.title) + "}\n" + pageEntry.body;
+}
+
+var addIndexToBody = function(pageEntry)
+{
+	for (category in pageEntry.categories)
+	{
+		pageEntry.body = "\\index[" + pageEntry.categories[category].replace(" ", "_", 'g') + "]{" + pageEntry.title + "}\n" + pageEntry.body;
+	}
+}
+
 
 
 var getLabelReferenceFromTitle = function(title)
@@ -271,15 +406,19 @@ var cleanTitleFromQuotations = function(title)
 	}
 }
 
-
-
-/**
-Write the page to file
-*/
-var writePage = function(pageEntry)
+var wrapBodyArticleWrapping=function(pageEntry)
 {
+	pageEntry.body = "\\small{\n" + pageEntry.body + "}\n\n";
+}
+
+
+
+var formatPageEntryToLatex = function(pageEntry)
+{
+	trimBody(pageEntry);
 
 	formatFilesInBody(pageEntry);
+	trimBody(pageEntry);
 
 	formatBoldInBody(pageEntry);
 	formatItalicInBody(pageEntry);
@@ -292,45 +431,40 @@ var writePage = function(pageEntry)
 	formatLinksInBody(pageEntry);
 
 	cleanHtmlLinebreaks(pageEntry);
-	cleanRedirects(pageEntry);
-
 	trimBody(pageEntry);
+	cleanRedirects(pageEntry);
+	trimBody(pageEntry);
+	removeInitialTitleFromBody(pageEntry);
+	trimBody(pageEntry);
+	fromatUnorderedListsInBody(pageEntry)
 
-	//TODO: Take care of the groups. Maybe as a see also?
+	// addIndexToBody(pageEntry);
+	addLabelToBody(pageEntry);
+	addTitleToBody(pageEntry);
 
-	var output = "";
+	wrapBodyArticleWrapping(pageEntry);
+}
 
-	output += "\\small{\n";
 
-	// add title
-	output += "\\textbf{" + cleanTitleFromQuotations(pageEntry.title) + "}\n";
+/**
+Write the page to file
+*/
+var writePage = function(pageEntry)
+{
 
-	// add label anchor
-	output += "\\label{" + getLabelReferenceFromTitle(pageEntry.title) + "}\n";	
 
-	// add main index
 
-	//output += "\\index{" + pageEntry.title + "}\n"
 	
-	// add category indices
-	for (category in pageEntry.categories)
-	{
-		//output += "\\index[" + pageEntry.categories[category].replace(" ", "_", 'g') + "]{" + pageEntry.title + "}\n";
-	}
+	//formatPageEntryToLatex(pageEntry);
+	//var output = pageEntry.body;
 
-	// add main body
-	output += pageEntry.body + "\n";
-
-
-	output += "}\n";
-	output += "\n";
-
+	var output = JSON.stringify(pageEntry, null, "\t");
 
 	fs.writeFile('./out/'+pageEntry.pageid+'.txt', output, function (err) {
 		if (err) throw err;
 		
-		console.log('SAVED-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-');
-		console.log(output);
+		
+		console.log(pageEntry.title + " done");
 		/*console.log(pageEntry.title + '(' + pageEntry.pageid + ')');
 		console.log(pageEntry.body);
 		console.log("se även: " + pageEntry.links.join(", "));
@@ -373,7 +507,8 @@ var curlPages = function(from, num, done)
 					var nextEntryStart = responseObject['query-continue']['allpages']['apcontinue'];
 
 					// curl next block
-					curlPages(nextEntryStart, num, done);
+					//curlPages(nextEntryStart, num, done);
+					done();
 
 				}
 			}
@@ -383,13 +518,75 @@ var curlPages = function(from, num, done)
 			done();
 		}
 
-		
-
-		
 
 	}).form({action: 'query', list: 'allpages', apfrom: from ,aplimit: num, format: 'json'});
 }
 
-curlPages('', 100, function(){
+var convertToLatex = function(done)
+{
+
+	// read directory
+	fs.readdir("./out/", function(err, files){
+		if (err) throw err;
+
+		convertFile(files, done);
+	});
+}
+
+var convertFile = function(files, done)
+{
+	if (files.length === 0)
+	{
+		done();
+		return;
+	}
+
+ 	var file = files.pop();
+
+ 	// do not handle non txt files
+ 	if (file.indexOf('.txt', file.length - '.txt'.length) === -1)
+ 	{
+ 		convertFile(files, done);
+ 		return;
+ 	}
+
+
+	console.log("reading " + file);
+
+	fs.readFile("./out/" + file, 'utf8' ,function (err, data) {
+		if (err) throw err;
+
+		// check file ending
+		var convertedPageEntry = JSON.parse(data);
+		formatPageEntryToLatex(convertedPageEntry);
+
+		var output = convertedPageEntry.body;
+
+		fs.writeFile('./latex/articles/'+convertedPageEntry.pageid+'.texpart', output, function (err) {
+
+			// recurse
+			convertFile(files, done);
+			
+
+		});
+
+		
+	});
+	
+}
+
+convertToLatex(function(){
+	console.log("done converting");
+});
+
+return;
+curlPages('', 50, function(){
 	console.log("found all: " + Object.keys(allPages).length);
+
+/*
+	convertToLatex(function(){
+		console.log("done converting");
+	});
+*/
+
 });
