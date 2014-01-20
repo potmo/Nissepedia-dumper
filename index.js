@@ -112,16 +112,26 @@ removes all the [[xxx]] from the body that is in the pageEntry.links
 var formatLinksInBody = function(pageEntry)
 {
 
-	// this regexp exposes the one or two groups
+	// this regexp matches the three groups
 	// the first group is the title of the page that the link is pointing to
 	// the second, optional, group is the display word.	
-	var linkRegexp = new RegExp('\\[\\[([^\\]\\|]*)\\|?([^\\]\\|]*?)\\]\\]','gi');
+	// the thid is trailing letters that should be in the same word but is outside the link
+	// e.g.  [[horse|horseshit]]s 
+	// 1. horse (pagetitle)
+	// 2. horsehsit (displaytitle)
+	// 3. s (trailingpart)
+	var linkRegexp = new RegExp('\\[\\[([^\\]\\|]*)\\|?([^\\]\\|]*?)\\]\\]([^\\s\\.,<>\'"]*)','gi');
 
 	// if the display word exist expicitly then use that. otherwise just use the link word directly.
-	pageEntry.body = pageEntry.body.replace(linkRegexp, function(x,pagetitle,displaytitle){
+	pageEntry.body = pageEntry.body.replace(linkRegexp, function(original, pagetitle, displaytitle, trailingpart){
 
 		var referenceId = getLabelReferenceFromTitle( pagetitle );
 		var currentPageReferenceId = getLabelReferenceFromTitle( pageEntry.title );
+
+		pagetitle = pagetitle.replace(/#/, ":", 'ig');
+		displaytitle = displaytitle.replace(/#/, ":", 'ig');
+
+	
 
 		// no need to refer back to the same page 
 		if (referenceId === currentPageReferenceId)
@@ -135,12 +145,24 @@ var formatLinksInBody = function(pageEntry)
 			}
 		}
 
+		// make sure it's not undefined
+		if (!trailingpart)
+		{
+			trailingpart = '';
+		}else
+		{
+			if (!displaytitle)
+			{
+				displaytitle = pagetitle + trailingpart;
+			}
+		}
+
 		if (displaytitle)
 		{
 			return displaytitle + " \\textsc{(se " + pagetitle + " s.~\\pageref{"+referenceId+"})}"
 		}else
 		{
-			return pagetitle + " \\textsc{(s.~\\pageref{"+referenceId+"})}"
+			return pagetitle + trailingpart + " \\textsc{(s.~\\pageref{"+referenceId+"})}"
 		}
 		
 	});
@@ -226,18 +248,23 @@ var cleanHtmlLinebreaks = function(pageEntry)
 */
 var formatBoldInBody = function(pageEntry)
 {
-	// bold is '''something''' in wiki markup
-	var regexp = new RegExp("[']{3}([^'{3}]*?)[']{3}",'gi');
 
-	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
-		return "\\textbf{" + group0 + "}"
-	});
+	var regexp;
 
 	//also replace html tags
 	regexp = new RegExp("<\s*b\s*[^>]*>(.*?)<\s*/\s*b\s*>", 'gi');
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
-		return "\\textbf{" + group0 + "}"
+		return "'''" + group0 + "'''";
 	});
+
+	// bold is '''something''' in wiki markup
+	regexp = new RegExp("[']{3}([^']*?)[']{3}",'gi');
+
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		return "\\textbf{" + group0 + "}";
+	});
+
+	
 	
 }
 
@@ -247,18 +274,21 @@ var formatBoldInBody = function(pageEntry)
 */
 var formatItalicInBody = function(pageEntry)
 {
-	
-	var regexp = new RegExp("[']{2}([^'{2}]*?)[']{2}",'gi');
-
-	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
-		return "\\textit{" + group0 + "}"
-	});
+	var regexp
 
 	//also replace html tags
 	regexp = new RegExp("<\s*i\s*[^>]*>(.*?)<\s*/\s*i\s*>", 'gi');
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0 ) {
-		return "\\textit{" + group0 + "}"
+		return "''" + group0 + "''";
 	});
+
+	
+	regexp = new RegExp("[']{2}([^'{2}]*?)[']{2}",'gi');
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		return "\\textit{" + group0 + "}";
+	});
+
+	
 	
 }
 
@@ -274,12 +304,36 @@ var formatDoubleQuotesInBody = function(pageEntry)
 	var regexp = new RegExp('"([^"]*?)"','gi');
 
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
-		return "``" + group0 + "''"
+		return "``" + group0 + "''";
 	});
 	
 }
 
-var fromatUnorderedListsInBody = function(pageEntry)
+var formatHeadingsInBody = function(pageEntry)
+{
+	/*		\section{Section Headings}		*/
+	/*		===Manifestet===  				*/
+
+	var regexp;
+
+	regexp = new RegExp("[=]{4}([^=]*?)[=]{4}",'gi');
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		return "HEAD4: " + group0 + "";
+	});
+
+	regexp = new RegExp("[=]{3}([^=]*?)[=]{3}",'gi');
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		return "HEAD3: " + group0 + "";
+	});
+
+	regexp = new RegExp("[=]{2}([^=]*?)[=]{2}",'gi');
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		return "HEAD2: " + group0 + "";
+	});
+
+}
+
+var formatUnorderedListsInBody = function(pageEntry)
 {
 
 	var lines = pageEntry.body.split('\n');
@@ -334,6 +388,61 @@ var fromatUnorderedListsInBody = function(pageEntry)
 	
 }
 
+var formatOrderedListsInBody = function(pageEntry)
+{
+
+	var lines = pageEntry.body.split('\n');
+
+	var output = "";
+
+	var currentDepth = 0;
+
+	for (lineIndex in lines)
+	{
+		var line = lines[lineIndex];
+		
+		var oldDepth = currentDepth;
+		//var currentDepth = new RegExp('^\\h?\\*{' +1+ '}[^\\*]+$', 'm');
+		var regexp = new RegExp('^\\s?(\\#*?)([^\\#]+.*?)$', 'm');
+		var result = regexp.exec(line);
+
+		currentDepth = result ? result[1].length : 0;
+		line = result ? ' ' + result[2].trim() : line;
+
+		while (oldDepth < currentDepth)
+		{
+			output += '\\begin{enumerate}\n';
+			oldDepth++;
+		}
+
+		if (currentDepth !== 0)	
+		{
+			output += '\\item' + line + '\n';
+		}
+
+		while (oldDepth > currentDepth)
+		{
+			output += '\\end{enumerate}\n';
+			oldDepth--;
+		}	
+
+		if (currentDepth === 0)
+		{
+			output += line + '\n';
+		}
+	}
+
+	while (currentDepth > 0)
+	{
+		output += '\\end{enumerate}\n';
+		currentDepth--;
+	}
+
+
+	pageEntry.body = output;
+	
+}
+
 var cleanRedirects = function(pageEntry)
 {
 	//TODO: Add a link instead fo just removing it
@@ -348,15 +457,23 @@ var removeInitialTitleFromBody = function(pageEntry)
 
 	var lines = pageEntry.body.split('\n');
 	var first = lines[0];
+
+	// clean up the title so that it is safe to push into a regep
+	var regexpSafeTitle = pageEntry.title;
+	regexpSafeTitle = regexpSafeTitle.replace(/\(/g, '\\(');
+	regexpSafeTitle = regexpSafeTitle.replace(/\)/g, '\\)');
+	regexpSafeTitle = regexpSafeTitle.replace(/\*/g, '\\*');
+
+	//JO))))N
 	
 	// match start of line
-	var cleanRegexp = new RegExp('^' + pageEntry.title + '', 'i');
+	var cleanRegexp = new RegExp('^' + regexpSafeTitle + '', 'i');
 	first = first.replace(cleanRegexp, '');
 
-	var quoteRegexp = new RegExp('^``' + cleanTitleFromQuotations(pageEntry.title) + '\'\'', 'i');
+	var quoteRegexp = new RegExp('^``' + cleanTitleFromQuotations(regexpSafeTitle) + '\'\'', 'i');
 	first = first.replace(quoteRegexp, '');
 
-	var boldRegexp = new RegExp('^\\\\textbf{' + cleanTitleFromQuotations(pageEntry.title) + '}', 'i');
+	var boldRegexp = new RegExp('^\\\\textbf{' + cleanTitleFromQuotations(regexpSafeTitle) + '}', 'i');
 	first = first.replace(boldRegexp, '');
 
 	
@@ -389,8 +506,10 @@ var addIndexToBody = function(pageEntry)
 
 var getLabelReferenceFromTitle = function(title)
 {
+
 	title = title.toLowerCase();
 	title = cleanTitleFromQuotations(title);
+	title = title.trim();
 	title = md5(title);
 	return title;
 }
@@ -411,6 +530,19 @@ var wrapBodyArticleWrapping=function(pageEntry)
 	pageEntry.body = "\\small{\n" + pageEntry.body + "}\n\n";
 }
 
+var cleanBodyFromSpecialCharacters = function(pageEntry)
+{
+	pageEntry.body = pageEntry.body.replace(/#/g, '\\#');
+	pageEntry.body = pageEntry.body.replace(/\$/g, '\\$');
+	pageEntry.body = pageEntry.body.replace(/%/g, '\\%');
+	pageEntry.body = pageEntry.body.replace(/&/g, '\\&');
+	pageEntry.body = pageEntry.body.replace(/</g, '\\textless');
+	pageEntry.body = pageEntry.body.replace(/>/g, '\\textgreater');
+	pageEntry.body = pageEntry.body.replace(/£/g, '\\punds');
+	pageEntry.body = pageEntry.body.replace(/\|/g, '\\textbar');
+	//pageEntry.body = pageEntry.body.replace(/\\/g, '\\textbackslash');
+}
+
 
 
 var formatPageEntryToLatex = function(pageEntry)
@@ -420,15 +552,16 @@ var formatPageEntryToLatex = function(pageEntry)
 	formatFilesInBody(pageEntry);
 	trimBody(pageEntry);
 
-	formatBoldInBody(pageEntry);
-	formatItalicInBody(pageEntry);
-	formatDoubleQuotesInBody(pageEntry);
-
 	addCategories(pageEntry);
 	formatCategoriesInBody(pageEntry);
 
 	addLinks(pageEntry);
 	formatLinksInBody(pageEntry);
+
+	formatBoldInBody(pageEntry);
+	formatItalicInBody(pageEntry);
+	formatDoubleQuotesInBody(pageEntry);
+	formatHeadingsInBody(pageEntry);
 
 	cleanHtmlLinebreaks(pageEntry);
 	trimBody(pageEntry);
@@ -436,11 +569,14 @@ var formatPageEntryToLatex = function(pageEntry)
 	trimBody(pageEntry);
 	removeInitialTitleFromBody(pageEntry);
 	trimBody(pageEntry);
-	fromatUnorderedListsInBody(pageEntry)
+	formatUnorderedListsInBody(pageEntry);
+	formatOrderedListsInBody(pageEntry);
 
 	// addIndexToBody(pageEntry);
 	addLabelToBody(pageEntry);
 	addTitleToBody(pageEntry);
+
+	cleanBodyFromSpecialCharacters(pageEntry);
 
 	wrapBodyArticleWrapping(pageEntry);
 }
@@ -507,8 +643,8 @@ var curlPages = function(from, num, done)
 					var nextEntryStart = responseObject['query-continue']['allpages']['apcontinue'];
 
 					// curl next block
-					//curlPages(nextEntryStart, num, done);
-					done();
+					curlPages(nextEntryStart, num, done);
+					//done();
 
 				}
 			}
@@ -529,15 +665,36 @@ var convertToLatex = function(done)
 	fs.readdir("./out/", function(err, files){
 		if (err) throw err;
 
-		convertFile(files, done);
+		console.log("reading dir done: " + files.length);
+
+		convertFile(files, [], function(convertedEntries)
+		{
+
+			console.log("converting files done: " + convertedEntries.length);
+
+			convertedEntries.sort(function (a, b) {
+			    return cleanTitleFromQuotations(b.title.toLowerCase()).localeCompare(cleanTitleFromQuotations(a.title.toLowerCase()), 'sv');
+			});
+
+			console.log("sorting files done: " + convertedEntries.length);
+
+			writeFiles(convertedEntries, 0, function()
+			{
+
+				console.log("writing files done: " + convertedEntries.length);
+
+				done();
+			});
+		});
+		
 	});
 }
 
-var convertFile = function(files, done)
+var convertFile = function(files, entries, done)
 {
 	if (files.length === 0)
 	{
-		done();
+		done(entries);
 		return;
 	}
 
@@ -546,47 +703,78 @@ var convertFile = function(files, done)
  	// do not handle non txt files
  	if (file.indexOf('.txt', file.length - '.txt'.length) === -1)
  	{
- 		convertFile(files, done);
+ 		convertFile(files, entries, done);
  		return;
  	}
 
 
-	console.log("reading " + file);
+	//console.log("reading " + file);
 
 	fs.readFile("./out/" + file, 'utf8' ,function (err, data) {
 		if (err) throw err;
 
 		// check file ending
 		var convertedPageEntry = JSON.parse(data);
-		formatPageEntryToLatex(convertedPageEntry);
 
-		var output = convertedPageEntry.body;
+		try{
+			formatPageEntryToLatex(convertedPageEntry);
+		}catch(error)
+		{
+			console.error("Crashed formatting: " + data);
+			throw error;
+		}
 
-		fs.writeFile('./latex/articles/'+convertedPageEntry.pageid+'.texpart', output, function (err) {
-
-			// recurse
-			convertFile(files, done);
-			
-
-		});
-
+		entries.push(convertedPageEntry);
+		
+		convertFile(files, entries, done);
 		
 	});
 	
 }
 
+var writeFiles = function(entries, num, done)
+{
+
+	if (entries.length === 0)
+	{
+		done();
+		return;
+	}
+
+	var convertedPageEntry = entries.pop();
+
+	var output = convertedPageEntry.body;
+
+	var fileNum = '' + num;
+
+	while(fileNum.length < 6)
+	{
+		fileNum = '0' + fileNum;
+	}
+
+	fs.writeFile('./latex/articles/'+fileNum+'.texpart', output, function (err) {
+
+		num++;
+		writeFiles(entries, num, done);
+	
+	});
+
+}
+
 convertToLatex(function(){
-	console.log("done converting");
-});
+		console.log("done converting");
+	});
 
 return;
+
+
 curlPages('', 50, function(){
 	console.log("found all: " + Object.keys(allPages).length);
 
-/*
+
 	convertToLatex(function(){
 		console.log("done converting");
 	});
-*/
+
 
 });

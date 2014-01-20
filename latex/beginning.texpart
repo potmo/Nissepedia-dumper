@@ -15,6 +15,9 @@
 \usepackage[swedish]{babel}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
+\usepackage{color}
+
+\definecolor{light-gray}{gray}{0.5}
 
 %\usepackage{csquotes}
 %\MakeOuterQuote{"}
