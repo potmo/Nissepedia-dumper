@@ -26,6 +26,10 @@
 % Inserts a blank page
 \newcommand{\blankpage}{\newpage\hbox{}\thispagestyle{empty}\newpage}
 
+\newcommand{\quotetext}[0]{%
+    ``#1''
+}
+
 \usepackage{units}
 
 % Typesets the font size, leading, and measure in the form of 10/12x26 pc.

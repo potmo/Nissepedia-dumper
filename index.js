@@ -279,11 +279,12 @@ var formatItalicInBody = function(pageEntry)
 	//also replace html tags
 	regexp = new RegExp("<\s*i\s*[^>]*>(.*?)<\s*/\s*i\s*>", 'gi');
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0 ) {
-		return "''" + group0 + "''";
+		return "\\textit{" + group0 + "}";
 	});
 
 	
-	regexp = new RegExp("[']{2}([^'{2}]*?)[']{2}",'gi');
+	//regexp = new RegExp("[']{2}([^']*?)[']{2}",'gi');
+	regexp = /''((?:(?!'').*?))''/gi;
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
 		return "\\textit{" + group0 + "}";
 	});
@@ -304,7 +305,8 @@ var formatDoubleQuotesInBody = function(pageEntry)
 	var regexp = new RegExp('"([^"]*?)"','gi');
 
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
-		return "``" + group0 + "''";
+		//return "``" + group0 + "''";
+		return '\\quotetext{' + group0 + '}';
 	});
 	
 }
