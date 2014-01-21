@@ -254,11 +254,12 @@ var formatBoldInBody = function(pageEntry)
 	//also replace html tags
 	regexp = new RegExp("<\s*b\s*[^>]*>(.*?)<\s*/\s*b\s*>", 'gi');
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
-		return "'''" + group0 + "'''";
+		return "\\textbf{" + group0 + "}";
 	});
 
 	// bold is '''something''' in wiki markup
-	regexp = new RegExp("[']{3}([^']*?)[']{3}",'gi');
+	//regexp = new RegExp("[']{3}([^']*?)[']{3}",'gi');
+	regexp = /'''((?:(?!''').*?))'''/gi;
 
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
 		return "\\textbf{" + group0 + "}";
@@ -293,6 +294,22 @@ var formatItalicInBody = function(pageEntry)
 	
 }
 
+
+
+var formatExternalLinksInBody = function(pageEntry)
+{
+
+	var regexp = /\[([^\]]*?)\]/gi;
+
+	
+
+	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
+		//return "``" + group0 + "''";
+		return '\\footnote{' + group0 + '}';
+	});
+	
+}
+
 /*
 
 	quotes is "something" in wiki markup
@@ -318,17 +335,17 @@ var formatHeadingsInBody = function(pageEntry)
 
 	var regexp;
 
-	regexp = new RegExp("[=]{4}([^=]*?)[=]{4}",'gi');
+	regexp = /====((?:(?!====).*?))====/gi;
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
 		return "HEAD4: " + group0 + "";
 	});
 
-	regexp = new RegExp("[=]{3}([^=]*?)[=]{3}",'gi');
+	regexp = /===((?:(?!===).*?))===/gi;
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
 		return "HEAD3: " + group0 + "";
 	});
 
-	regexp = new RegExp("[=]{2}([^=]*?)[=]{2}",'gi');
+	regexp = /==((?:(?!==).*?))==/gi;
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
 		return "HEAD2: " + group0 + "";
 	});
@@ -559,6 +576,7 @@ var formatPageEntryToLatex = function(pageEntry)
 
 	addLinks(pageEntry);
 	formatLinksInBody(pageEntry);
+	formatExternalLinksInBody(pageEntry);
 
 	formatBoldInBody(pageEntry);
 	formatItalicInBody(pageEntry);
