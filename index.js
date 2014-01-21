@@ -337,17 +337,17 @@ var formatHeadingsInBody = function(pageEntry)
 
 	regexp = /====((?:(?!====).*?))====/gi;
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
-		return "HEAD4: " + group0 + "";
+		return "\\hspace*{\\fill} \\\\ \\uline{" + group0 + "}\\hspace*{\\fill} \\\\ ";
 	});
 
 	regexp = /===((?:(?!===).*?))===/gi;
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
-		return "HEAD3: " + group0 + "";
+		return "\\hspace*{\\fill} \\\\ \\uline{" + group0 + "}\\hspace*{\\fill} \\\\ ";
 	});
 
 	regexp = /==((?:(?!==).*?))==/gi;
 	pageEntry.body = pageEntry.body.replace(regexp, function(original, group0) {
-		return "HEAD2: " + group0 + "";
+		return "\\hspace*{\\fill} \\\\ \\uline{" + group0 + "}\\hspace*{\\fill} \\\\ ";
 	});
 
 }
@@ -551,6 +551,7 @@ var wrapBodyArticleWrapping=function(pageEntry)
 
 var cleanBodyFromSpecialCharacters = function(pageEntry)
 {
+	pageEntry.body = pageEntry.body.replace(/_/g, '\\_');
 	pageEntry.body = pageEntry.body.replace(/#/g, '\\#');
 	pageEntry.body = pageEntry.body.replace(/\$/g, '\\$');
 	pageEntry.body = pageEntry.body.replace(/%/g, '\\%');
@@ -559,6 +560,21 @@ var cleanBodyFromSpecialCharacters = function(pageEntry)
 	pageEntry.body = pageEntry.body.replace(/>/g, '\\textgreater');
 	pageEntry.body = pageEntry.body.replace(/£/g, '\\punds');
 	pageEntry.body = pageEntry.body.replace(/\|/g, '\\textbar');
+
+	// with blank after
+	pageEntry.body = pageEntry.body.replace(/ö\s/g, '\\charoo \\ ');
+	pageEntry.body = pageEntry.body.replace(/Ö\s/g, '\\charOO \\ ');
+	pageEntry.body = pageEntry.body.replace(/ä\s/g, '\\charae \\ ');
+	pageEntry.body = pageEntry.body.replace(/Ä\s/g, '\\charAE \\ ');
+	pageEntry.body = pageEntry.body.replace(/å\s/g, '\\charaa \\ ');
+	pageEntry.body = pageEntry.body.replace(/Å\s/g, '\\charAA \\ ');
+
+	pageEntry.body = pageEntry.body.replace(/ö/g, '\\charoo ');
+	pageEntry.body = pageEntry.body.replace(/Ö/g, '\\charOO ');
+	pageEntry.body = pageEntry.body.replace(/ä/g, '\\charae ');
+	pageEntry.body = pageEntry.body.replace(/Ä/g, '\\charAE ');
+	pageEntry.body = pageEntry.body.replace(/å/g, '\\charaa ');
+	pageEntry.body = pageEntry.body.replace(/Å/g, '\\charAA ');
 	//pageEntry.body = pageEntry.body.replace(/\\/g, '\\textbackslash');
 }
 
