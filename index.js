@@ -159,10 +159,11 @@ var formatLinksInBody = function(pageEntry)
 
 		if (displaytitle)
 		{
-			return displaytitle + " \\textsc{(se " + pagetitle + " s.~\\pageref{"+referenceId+"})}"
+			//return displaytitle + " \\textsc{(se " + pagetitle + " s.~\\pageref{"+referenceId+"})}"
+			return displaytitle + " (\\textit{se} \\textsc{" + pagetitle + "})";
 		}else
 		{
-			return pagetitle + trailingpart + " \\textsc{(s.~\\pageref{"+referenceId+"})}"
+			return " \\textsc{" + pagetitle + trailingpart + "}";
 		}
 		
 	});

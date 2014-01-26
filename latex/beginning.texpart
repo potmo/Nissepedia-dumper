@@ -1,4 +1,4 @@
-\documentclass[a5paper, twoside]{book}
+\documentclass[a5paper, twoside, twocolumn]{book}
 
 
 %%
@@ -17,6 +17,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage[greek,russian,english,swedish]{babel}
 \usepackage{color}
+
+
 
 \definecolor{light-gray}{gray}{0.5}
 
@@ -64,6 +66,7 @@
 
 \usepackage[normalem]{ulem}
 
+\usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
 
 
 
@@ -127,4 +130,6 @@ Här kommer det ett litet förord.
 
 \chapter*{Ett urval}
 \newpage
+
+\documentclass[twocolumn]{article}
 
