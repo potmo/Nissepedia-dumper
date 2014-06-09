@@ -1,43 +1,12 @@
 
-var request = require('request');
+
 var fs = require('fs');
 var md5 = require('MD5');
 
-var allPages = {}; // using id as key and title as value
+
 var allCategories = []; // category name
 
-// get the parsed data as html
-//http://en.wikipedia.org/w/api.php?action=parse&pageid=2012&format=json
 
-// get unparsed content
-//http://www.nissepedia.com/index.php?action=raw&title=Calbuffe
-
-// get the categories
-//http://en.wikipedia.org/w/api.php?action=query&titles=Albert%20Einstein&prop=categories&format=json
-
-// get the links
-//http://en.wikipedia.org/w/api.php?action=query&titles=Albert%20Einstein&prop=links&format=json
-
-var addPageIfNotAdded= function(pageid, title){
-	if (!allPages[pageid])
-	{
-		var pageEntry = {title:title, pageid: pageid, categories : [], links: [], body: ""};
-		allPages[pageid] = pageEntry;
-		
-		curlPage(pageEntry);
-	}
-}
-
-var curlPage = function(pageEntry)
-{
-	
-	request('http://www.nissepedia.com/index.php?action=raw&title=' + pageEntry.title, function(error, response, body){
-		
-		pageEntry.body = body;
-
-		writePage(pageEntry);
-	});//.form({action: 'raw', title: title});
-}
 
 /**
 generic find metadata (i.e. [[Maybesomething: something|maybe]])
@@ -619,87 +588,12 @@ var formatPageEntryToLatex = function(pageEntry)
 }
 
 
-/**
-Write the page to file
-*/
-var writePage = function(pageEntry)
-{
-
-
-
-	
-	//formatPageEntryToLatex(pageEntry);
-	//var output = pageEntry.body;
-
-	var output = JSON.stringify(pageEntry, null, "\t");
-
-	fs.writeFile('./out/'+pageEntry.pageid+'.txt', output, function (err) {
-		if (err) throw err;
-		
-		
-		console.log(pageEntry.title + " done");
-		/*console.log(pageEntry.title + '(' + pageEntry.pageid + ')');
-		console.log(pageEntry.body);
-		console.log("se även: " + pageEntry.links.join(", "));
-		console.log("kategorier: " + pageEntry.categories.join(", "));
-		console.log('');*/
-	});
-}
-
-var curlPages = function(from, num, done)
-{
-	request.post('http://www.nissepedia.com/api.php', function(error, response, body){
-		
-		var responseObject = JSON.parse(body);
-
-		if ('query' in responseObject)
-		{
-			if ('allpages' in responseObject['query'])
-			{
-				for(var key in responseObject['query']['allpages']) { 
-					var obj = responseObject['query']['allpages'][key];
-
-					var title = obj['title'];
-					var pageid = obj['pageid'];
-
-					// remove heading and trailing quotations
-					//title = title.substring(1, title.length - 1); 
-
-					addPageIfNotAdded(pageid, title);
-				}
-			}
-		}
-
-		// see if er should continue to query. In that case we will get back this beutiful response
-		if ('query-continue' in responseObject)
-		{
-			if ('allpages' in responseObject['query-continue'])
-			{
-				if ('apcontinue' in responseObject['query-continue']['allpages'])
-				{
-					var nextEntryStart = responseObject['query-continue']['allpages']['apcontinue'];
-
-					// curl next block
-					curlPages(nextEntryStart, num, done);
-					//done();
-
-				}
-			}
-		}else
-		{
-			console.log("final entry");
-			done();
-		}
-
-
-	}).form({action: 'query', list: 'allpages', apfrom: from ,aplimit: num, format: 'json'});
-}
 
 var convertToLatex = function(done)
 {
 
 	// read directory
-	fs.readdir("./out/", function(err, files){
+	fs.readdir("./json/", function(err, files){
 		if (err) throw err;
 
 		console.log("reading dir done: " + files.length);
@@ -747,8 +641,10 @@ var convertFile = function(files, entries, done)
 
 	//console.log("reading " + file);
 
-	fs.readFile("./out/" + file, 'utf8' ,function (err, data) {
+	fs.readFile("./json/" + file, 'utf8' ,function (err, data) {
 		if (err) throw err;
+
+		console.log('reading: ' + file)
 
 		// check file ending
 		var convertedPageEntry = JSON.parse(data);
@@ -798,20 +694,18 @@ var writeFiles = function(entries, num, done)
 
 }
 
+/*
 convertToLatex(function(){
 		console.log("done converting");
 	});
 
 return;
+*/
 
 
-curlPages('', 50, function(){
-	console.log("found all: " + Object.keys(allPages).length);
 
 
 	convertToLatex(function(){
 		console.log("done converting");
 	});
 
-
-});
